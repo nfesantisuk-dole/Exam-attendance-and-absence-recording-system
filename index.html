@@ -1,34 +1,556 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ระบบบันทึกข้อมูลเข้าสอบขาดสอบ สกร.ระดับอำเภอดอยหล่อ จังหวัดเชียงใหม่</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* เปลี่ยน background-color จาก #000 เป็น #ffffff (สีขาว) */
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background-color: #ffffff; }
-        .responsive-iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        
+        body { font-family: 'Prompt', sans-serif; background-color: #f1f5f9; display: flex; flex-direction: column; min-height: 100vh; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .tab-btn { position: relative; transition: all 0.3s ease; }
+        .tab-active { color: #2563eb; font-weight: 600; background: #fff; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .tab-inactive { color: #64748b; font-weight: 500; }
+        .tab-inactive:hover { color: #3b82f6; background: rgba(255,255,255,0.6); border-radius: 0.75rem; }
+
+        @media print {
+            body { background-color: #ffffff; }
+            #web-ui { display: none !important; } 
+            #print-area { display: block !important; font-family: 'Sarabun', serif; color: #000; width: 100%; margin: 0; padding: 0; }
+            @page { size: A4 portrait; margin: 10mm 15mm; }
+            
+            table.print-table { width: 100%; border-collapse: collapse; margin-top: 15px; table-layout: fixed; word-wrap: break-word; }
+            table.print-table tr { page-break-inside: avoid; }
+            table.print-table th, table.print-table td { border: 1px solid #000; padding: 4px 6px; font-size: 13pt; text-align: center; vertical-align: middle; }
+            table.print-table th { font-weight: bold; background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            table.print-table td.text-left { text-align: left; padding-left: 8px; }
+            
+            .print-header { text-align: center; margin-bottom: 20px; }
+            .print-title { font-size: 18pt; font-weight: bold; margin-top: 10px; }
+            .print-subtitle { font-size: 16pt; font-weight: bold; margin-top: 5px; }
+            
+            .print-signature { margin-top: 30px; page-break-inside: avoid; }
+            .print-signature p { margin: 0; line-height: 1.5; font-size: 16pt; }
         }
     </style>
-    <script>
-        window.onload = function() {
-            document.title = "ระบบบันทึกข้อมูลเข้าสอบขาดสอบ สกร.ระดับอำเภอดอยหล่อ จังหวัดเชียงใหม่";
-        };
-    </script>
 </head>
-<body>
-    <iframe 
-        loading="lazy" 
-        class="responsive-iframe"
-        src="https://script.google.com/a/macros/cmi.nfe.go.th/s/AKfycbzHeqVGEt2JJg54DowTDtSVpcLBUAAFB9plG2L7cdVmTZv0HwLldkFCyxG11vPzoWvJ/exec" 
-        allowfullscreen="allowfullscreen" 
-        allow="fullscreen">
-    </iframe>
+<body class="pt-4 md:pt-8 px-2 md:px-6">
+
+    <div id="web-ui" class="flex-grow flex flex-col items-center pb-8 w-full">
+        <div class="w-full max-w-7xl bg-white rounded-2xl md:rounded-3xl shadow-lg border border-slate-100 overflow-hidden mb-6">
+            <div class="bg-gradient-to-r from-blue-700 to-indigo-800 p-5 md:p-8 text-center">
+                <h1 class="text-2xl md:text-3xl font-bold text-white tracking-wide"><i class="fa-solid fa-graduation-cap mr-3"></i>ระบบบันทึกข้อมูลเข้าสอบขาดสอบ สกร.ระดับอำเภอดอยหล่อ จังหวัดเชียงใหม่</h1>
+            </div>
+            
+            <div class="bg-slate-50 p-2 border-b border-slate-100">
+                <div class="flex flex-row justify-center gap-1 md:gap-3 max-w-3xl mx-auto overflow-x-auto hide-scrollbar">
+                    <button onclick="switchTab('setup')" id="tab-setup" class="tab-btn tab-active flex-1 py-3 px-2 min-w-[120px] text-center text-sm md:text-base whitespace-nowrap">
+                        <i class="fa-solid fa-file-pen mr-2"></i>1. ตั้งค่ารายวิชา
+                    </button>
+                    <button onclick="switchTab('exam')" id="tab-exam" class="tab-btn tab-inactive flex-1 py-3 px-2 min-w-[120px] text-center text-sm md:text-base whitespace-nowrap">
+                        <i class="fa-solid fa-clipboard-check mr-2"></i>2. บันทึกวันสอบ
+                    </button>
+                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn tab-inactive flex-1 py-3 px-2 min-w-[120px] text-center text-sm md:text-base whitespace-nowrap">
+                        <i class="fa-solid fa-chart-pie mr-2"></i>3. รายงานสถิติ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-setup" class="bg-white rounded-2xl md:rounded-3xl shadow-md border border-slate-100 p-5 md:p-8 w-full max-w-7xl transition-all">
+            <div class="mb-6 pb-4 border-b border-slate-100">
+                <h2 class="text-lg md:text-xl font-bold text-slate-800"><i class="fa-solid fa-gear text-blue-500 mr-2"></i>เตรียมข้อมูลผู้มีสิทธิ์สอบ</h2>
+                <p class="text-slate-500 text-sm mt-1">กรอกข้อมูลพื้นฐานก่อนวันสอบจริง เพื่อความรวดเร็ว</p>
+            </div>
+
+            <form id="setupForm" onsubmit="handleInitialSubmit(event)">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+                    <div>
+                        <label class="block text-slate-700 text-sm font-semibold mb-2 ml-1">ภาคเรียน <span class="text-red-500">*</span></label>
+                        <select id="semester" name="semester" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                            <option value="" disabled selected>-- เลือกภาคเรียน --</option>
+                            <option value="1/2568">1/2568</option>
+                            <option value="2/2568">2/2568</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-700 text-sm font-semibold mb-2 ml-1">สนามสอบ <span class="text-red-500">*</span></label>
+                        <select id="examCenter" name="examCenter" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                            <option value="" disabled selected>-- เลือกสนามสอบ --</option>
+                           <option value="สนามสอบที่ 1 โรงเรียนสองแคววิทยาคม">สนามสอบที่ 1 โรงเรียนสองแคววิทยาคม</option>
+                            <option value="สนามสอบที่ 2 โรงเรียนสันติสุข">สนามสอบที่ 2 โรงเรียนสันติสุข</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-700 text-sm font-semibold mb-2 ml-1">สกร.ระดับอำเภอ <span class="text-red-500">*</span></label>
+                        <input type="text" id="district" name="district" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="เช่น อำเภอดอยหล่อ">
+                    </div>
+                    <div>
+                        <label class="block text-slate-700 text-sm font-semibold mb-2 ml-1">ศกร.ระดับตำบล <span class="text-red-500">*</span></label>
+                        <input type="text" id="subDistrict" name="subDistrict" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="เช่น ตำบลดอยหล่อ">
+                    </div>
+                    <div class="lg:col-span-2">
+                        <label class="block text-slate-700 text-sm font-semibold mb-2 ml-1">ระดับชั้น <span class="text-red-500">*</span></label>
+                        <select id="level" name="level" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                            <option value="" disabled selected>-- เลือกระดับชั้น --</option>
+                            <option value="ประถมศึกษา">ประถมศึกษา</option>
+                            <option value="มัธยมศึกษาตอนต้น">มัธยมศึกษาตอนต้น</option>
+                            <option value="มัธยมศึกษาตอนปลาย">มัธยมศึกษาตอนปลาย</option>
+                        </select>
+                    </div>
+                    <div class="lg:col-span-2">
+                        <label class="block text-slate-700 text-sm font-semibold mb-2 ml-1">รายวิชา <span class="text-red-500">*</span></label>
+                        <input type="text" id="subject" name="subject" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="เช่น ทักษะการเรียนรู้ (ทร11001)">
+                    </div>
+                </div>
+
+                <div class="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 mb-8 max-w-sm mx-auto shadow-inner">
+                    <label class="block text-blue-800 text-sm font-bold mb-3 text-center">ผู้มีสิทธิ์สอบทั้งหมด (คน) <span class="text-red-500">*</span></label>
+                    <input type="number" id="total" name="total" min="1" required class="w-full px-4 py-3 text-3xl text-center font-bold text-slate-800 bg-white border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" placeholder="0">
+                </div>
+
+                <button type="submit" id="setupSubmitBtn" class="w-full max-w-sm mx-auto block bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-lg py-4 px-6 rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                    <i class="fa-solid fa-save mr-2"></i> บันทึกข้อมูล
+                </button>
+            </form>
+        </div>
+
+        <div id="view-exam" class="hidden bg-white rounded-2xl md:rounded-3xl shadow-md border border-slate-100 p-4 md:p-8 w-full max-w-7xl">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 border-b border-slate-100 gap-4">
+                <div>
+                    <h2 class="text-lg md:text-xl font-bold text-slate-800"><i class="fa-solid fa-list-check text-emerald-500 mr-2"></i>ตารางบันทึกการเข้าสอบ</h2>
+                    <p class="text-slate-500 text-sm mt-1">กรอกยอดผู้เข้าสอบจริง ระบบจะคำนวณการขาดสอบให้อัตโนมัติ</p>
+                </div>
+                <button onclick="loadExamTable()" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 py-2 px-4 rounded-lg text-sm font-medium shadow-sm flex items-center">
+                    <i class="fa-solid fa-rotate mr-2 text-slate-400"></i>อัปเดตข้อมูล
+                </button>
+            </div>
+
+            <div id="table-loading" class="text-center py-12">
+                <i class="fa-solid fa-circle-notch fa-spin text-4xl text-blue-500 mb-3"></i>
+                <p class="text-slate-500 font-medium">กำลังโหลดข้อมูลรายวิชา...</p>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-200 hide-scrollbar shadow-sm">
+                <table class="w-full text-sm text-left hidden whitespace-nowrap" id="exam-table">
+                    <thead class="text-xs text-slate-600 uppercase bg-slate-100 border-b border-slate-200">
+                        <tr>
+                            <th class="px-4 py-4 min-w-[150px]">ภาคเรียน / สนามสอบ</th>
+                            <th class="px-4 py-4 min-w-[200px]">ระดับชั้น / รายวิชา</th>
+                            <th class="px-4 py-4 text-center text-blue-700 w-24">มีสิทธิ์ (คน)</th>
+                            <th class="px-4 py-4 text-center text-emerald-700 w-48">เข้าสอบจริง</th>
+                            <th class="px-4 py-4 text-center text-rose-700 w-24">ขาดสอบ</th>
+                            <th class="px-4 py-4 text-center w-24">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="exam-table-body" class="divide-y divide-slate-100 bg-white">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-dashboard" class="hidden bg-slate-50 rounded-2xl md:rounded-3xl shadow-inner border border-slate-200 p-4 md:p-8 w-full max-w-7xl">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <h2 class="text-xl md:text-2xl font-bold text-slate-800"><i class="fa-solid fa-chart-line text-indigo-500 mr-3"></i>รายงานสถิติภาพรวม</h2>
+                <div class="flex gap-2">
+                    <button onclick="window.print()" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white py-2 px-4 rounded-lg text-sm font-medium shadow-md flex items-center transition-all hover:-translate-y-0.5">
+                        <i class="fa-solid fa-print mr-2"></i>พิมพ์เอกสาร (PDF)
+                    </button>
+                    <button onclick="loadDashboardData()" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 py-2 px-4 rounded-lg text-sm font-medium shadow-sm"><i class="fa-solid fa-rotate mr-2 text-slate-400"></i>อัปเดต</button>
+                </div>
+            </div>
+
+            <div id="dash-loading" class="text-center py-16"><i class="fa-solid fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i><p class="text-slate-500 font-medium">กำลังคำนวณสถิติ...</p></div>
+            
+            <div id="dash-content" class="hidden space-y-6">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full"></div>
+                        <p class="text-slate-500 text-xs md:text-sm font-bold mb-1 relative z-10">มีสิทธิ์สอบรวม</p>
+                        <p class="text-3xl md:text-4xl font-bold text-blue-600 relative z-10" id="dash-total">0</p>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute -right-4 -top-4 w-16 h-16 bg-emerald-50 rounded-full"></div>
+                        <p class="text-slate-500 text-xs md:text-sm font-bold mb-1 relative z-10">เข้าสอบรวม</p>
+                        <p class="text-3xl md:text-4xl font-bold text-emerald-500 relative z-10" id="dash-attended">0</p>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute -right-4 -top-4 w-16 h-16 bg-rose-50 rounded-full"></div>
+                        <p class="text-slate-500 text-xs md:text-sm font-bold mb-1 relative z-10">ขาดสอบรวม</p>
+                        <p class="text-3xl md:text-4xl font-bold text-rose-500 relative z-10" id="dash-absent">0</p>
+                    </div>
+                    <div class="bg-slate-800 rounded-2xl p-5 shadow-sm relative overflow-hidden text-white">
+                        <div class="absolute -right-4 -top-4 w-16 h-16 bg-slate-700 rounded-full"></div>
+                        <p class="text-slate-300 text-xs md:text-sm font-bold mb-1 relative z-10">อัตราเข้าสอบ (%)</p>
+                        <p class="text-3xl md:text-4xl font-bold text-emerald-400 relative z-10" id="dash-percent">0%</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm lg:col-span-1">
+                        <h3 class="text-sm font-bold text-slate-700 mb-4 text-center">สัดส่วน เข้าสอบ / ขาดสอบ</h3>
+                        <div class="relative h-56 w-full"><canvas id="pieChart"></canvas></div>
+                    </div>
+                    <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm lg:col-span-2">
+                        <h3 class="text-sm font-bold text-slate-700 mb-4 text-center">สถิติแยกตามระดับชั้น</h3>
+                        <div class="relative h-56 w-full"><canvas id="barChart"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden mt-8">
+                    <div class="p-5 border-b border-slate-100 bg-slate-50 flex items-center">
+                        <div class="w-1.5 h-6 bg-indigo-500 rounded-full mr-3"></div>
+                        <h3 class="text-lg font-bold text-slate-800">สรุปข้อมูลการเข้าสอบ - ขาดสอบ</h3>
+                    </div>
+                    <div class="overflow-x-auto hide-scrollbar">
+                        <table class="w-full text-sm text-left whitespace-nowrap">
+                            <thead class="text-xs text-slate-600 uppercase bg-slate-100 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-4 text-center">ภาคเรียน</th>
+                                    <th class="px-4 py-4">สนามสอบ</th>
+                                    <th class="px-4 py-4">ศกร.ตำบล</th>
+                                    <th class="px-4 py-4">รายวิชา</th>
+                                    <th class="px-4 py-4 text-center text-blue-700">สิทธิ์รวม</th>
+                                    <th class="px-4 py-4 text-center bg-emerald-50 text-emerald-700">เข้าสอบ</th>
+                                    <th class="px-4 py-4 text-center bg-emerald-50 text-emerald-700">ร้อยละเข้า</th>
+                                    <th class="px-4 py-4 text-center bg-rose-50 text-rose-700">ขาดสอบ</th>
+                                    <th class="px-4 py-4 text-center bg-rose-50 text-rose-700">ร้อยละขาด</th>
+                                </tr>
+                            </thead>
+                            <tbody id="web-detail-table-body" class="divide-y divide-slate-100">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="w-full py-6 mt-auto bg-slate-100/50 border-t border-slate-200">
+            <div class="max-w-7xl mx-auto px-4 text-center">
+                <p class="text-slate-500 text-sm font-medium mb-1">&copy; 2026 พัฒนาระบบโดย <span class="text-slate-700 font-semibold">นายยุรนันท์ ขันแข่งบุญ</span></p>
+                <p class="text-slate-400 text-xs">ครูศูนย์การเรียนรู้ สกร.ระดับอำเภอดอยหล่อ จังหวัดเชียงใหม่</p>
+            </div>
+        </footer>
+    </div> 
+
+    <div id="print-area" class="hidden">
+        <div class="print-header">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/%E0%B8%95%E0%B8%A3%E0%B8%B2%E0%B8%84%E0%B8%A3%E0%B8%B8%E0%B8%91.svg/150px-%E0%B8%95%E0%B8%A3%E0%B8%B2%E0%B8%84%E0%B8%A3%E0%B8%B8%E0%B8%91.svg.png" 
+                 alt="ตราครุฑ" style="width: 55px; margin: 0 auto;">
+            <div class="print-title">รายงานสรุปผลการเข้าสอบและขาดสอบ</div>
+            <div class="print-subtitle">ศูนย์ส่งเสริมการเรียนรู้ระดับอำเภอดอยหล่อ จังหวัดเชียงใหม่</div>
+        </div>
+
+        <table class="print-table">
+            <thead>
+                <tr>
+                    <th style="width: 4%;">ที่</th>
+                    <th style="width: 8%;">ภาคเรียน</th>
+                    <th style="width: 12%;">สนามสอบ</th>
+                    <th style="width: 11%;">ศกร.ตำบล</th>
+                    <th style="width: 10%;">ระดับชั้น</th>
+                    <th style="width: 15%;">รายวิชา</th>
+                    <th style="width: 8%;">มีสิทธิ์<br>(คน)</th>
+                    <th style="width: 8%;">เข้าสอบ<br>(คน)</th>
+                    <th style="width: 8%;">ร้อยละ</th>
+                    <th style="width: 8%;">ขาดสอบ<br>(คน)</th>
+                    <th style="width: 8%;">ร้อยละ</th>
+                </tr>
+            </thead>
+            <tbody id="print-table-body">
+                </tbody>
+            <tfoot id="print-table-foot">
+                </tfoot>
+        </table>
+
+        <div class="print-signature" style="display: flex; justify-content: space-around; text-align: center;">
+            <div style="width: 45%;">
+                <p style="margin-bottom: 40px;">ลงชื่อ.........................................................ผู้รายงาน</p>
+                <p>(นายยุรนันท์ ขันแข่งบุญ)</p>
+                <p>ครู ศูนย์การเรียนรู้ สกร.ระดับอำเภอดอยหล่อ</p>
+            </div>
+            <div style="width: 45%;">
+                <p style="margin-bottom: 40px;">ลงชื่อ.........................................................ผู้รับรอง</p>
+                <p>(.........................................................)</p>
+                <p>ผู้อำนวยการ สกร.ระดับอำเภอดอยหล่อ</p>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        let chartPie = null;
+        let chartBar = null;
+
+        function switchTab(tabName) {
+            ['setup', 'exam', 'dashboard'].forEach(tab => {
+                document.getElementById('view-' + tab).classList.add('hidden');
+                document.getElementById('tab-' + tab).className = "tab-btn tab-inactive flex-1 py-3 px-2 min-w-[120px] text-center text-sm md:text-base whitespace-nowrap";
+            });
+            document.getElementById('view-' + tabName).classList.remove('hidden');
+            document.getElementById('tab-' + tabName).className = "tab-btn tab-active flex-1 py-3 px-2 min-w-[120px] text-center text-sm md:text-base whitespace-nowrap";
+
+            if (tabName === 'exam') loadExamTable();
+            if (tabName === 'dashboard') loadDashboardData();
+        }
+
+        // แท็บ 1: ฟอร์มตั้งค่า
+        function handleInitialSubmit(event) {
+            event.preventDefault();
+            const form = document.getElementById('setupForm');
+            const total = parseInt(form.total.value);
+
+            if(total <= 0) return Swal.fire({icon: 'error', title: 'ผิดพลาด', text: 'จำนวนผู้มีสิทธิ์สอบต้องมากกว่า 0'});
+
+            const formData = {
+                semester: form.semester.value, 
+                examCenter: form.examCenter.value, 
+                district: form.district.value,
+                subDistrict: form.subDistrict.value, 
+                level: form.level.value,
+                subject: form.subject.value, 
+                total: total
+            };
+
+            const btn = document.getElementById('setupSubmitBtn');
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i>กำลังบันทึก...';
+
+            google.script.run.withSuccessHandler(res => {
+                btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-save mr-2"></i> บันทึกข้อมูล';
+                if(res.success) {
+                    Swal.fire({icon: 'success', title: 'สำเร็จ!', text: res.message, timer: 1500, showConfirmButton: false});
+                    form.subject.value = ''; form.total.value = ''; 
+                } else {
+                    Swal.fire('ผิดพลาด', res.message, 'error');
+                }
+            }).saveInitialRecord(formData);
+        }
+
+        // แท็บ 2: ตารางกรอกคะแนน
+        function loadExamTable() {
+            document.getElementById('table-loading').classList.remove('hidden');
+            document.getElementById('exam-table').classList.add('hidden');
+            
+            // เพิ่ม withFailureHandler เพื่อแจ้งเตือนหากฝั่งเซิร์ฟเวอร์มีปัญหา
+            google.script.run
+                .withSuccessHandler(renderTable)
+                .withFailureHandler(function(error) {
+                    document.getElementById('table-loading').classList.add('hidden');
+                    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้: ' + error.message, 'error');
+                })
+                .getRecordsForTable();
+        }
+
+        function renderTable(records) {
+            document.getElementById('table-loading').classList.add('hidden');
+            const table = document.getElementById('exam-table');
+            const tbody = document.getElementById('exam-table-body');
+            tbody.innerHTML = '';
+            table.classList.remove('hidden');
+
+            if(records.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-slate-400 bg-slate-50"><i class="fa-solid fa-folder-open text-3xl mb-2 block"></i>ยังไม่มีข้อมูล กรุณาตั้งค่าในแท็บที่ 1</td></tr>';
+                return;
+            }
+
+            records.forEach(rec => {
+                const isSaved = rec.status === "บันทึกแล้ว";
+                let inputHtml = '', absentHtml = '', btnHtml = '';
+
+                if(isSaved) {
+                    inputHtml = `
+                        <div class="flex flex-col items-center">
+                            <span class="font-bold text-emerald-600 text-lg">${rec.attended}</span>
+                            <span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full mt-1 font-semibold">เข้า ${rec.pctAtt}</span>
+                        </div>`;
+                    absentHtml = `
+                        <div class="flex flex-col items-center">
+                            <span class="font-bold text-rose-500 text-lg">${rec.absent}</span>
+                            <span class="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full mt-1 font-semibold">ขาด ${rec.pctAbs}</span>
+                        </div>`;
+                    btnHtml = `<button onclick="editRow('${rec.id}', ${rec.total})" class="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors w-full"><i class="fa-solid fa-pen mr-1"></i>แก้ไข</button>`;
+                } else {
+                    inputHtml = `<div class="flex justify-center"><input type="number" id="input-${rec.id}" min="0" max="${rec.total}" class="w-20 text-center border border-slate-300 rounded-lg py-1.5 px-2 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" placeholder="ระบุ"></div>`;
+                    absentHtml = `<span class="text-slate-300">-</span>`;
+                    btnHtml = `<button onclick="saveAttendance('${rec.id}', ${rec.total})" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-colors w-full"><i class="fa-solid fa-check mr-1"></i>บันทึก</button>`;
+                }
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-3">
+                            <p class="font-bold text-slate-700">${rec.subDistrict}</p>
+                            <div class="flex items-center gap-1 mt-1 text-[11px] text-slate-500">
+                                <span class="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-bold">${rec.semester}</span> 
+                                <span><i class="fa-solid fa-location-dot mx-1"></i>${rec.center}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <p class="font-bold text-slate-800 text-wrap min-w-[150px] leading-tight">${rec.subject}</p>
+                            <span class="inline-block bg-indigo-50 text-indigo-600 text-[10px] px-2 py-0.5 rounded mt-1 font-semibold">${rec.level}</span>
+                        </td>
+                        <td class="px-4 py-3 text-center align-middle">
+                            <span class="bg-slate-100 text-slate-700 font-bold px-3 py-1.5 rounded-lg">${rec.total}</span>
+                        </td>
+                        <td class="px-4 py-3 text-center align-middle" id="cell-input-${rec.id}">${inputHtml}</td>
+                        <td class="px-4 py-3 text-center align-middle" id="cell-absent-${rec.id}">${absentHtml}</td>
+                        <td class="px-4 py-3 text-center align-middle" id="cell-btn-${rec.id}">${btnHtml}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function editRow(id, total) {
+            document.getElementById(`cell-input-${id}`).innerHTML = `<div class="flex justify-center"><input type="number" id="input-${id}" min="0" max="${total}" class="w-20 text-center border border-amber-300 rounded-lg py-1.5 px-2 focus:ring-2 focus:ring-amber-500 outline-none shadow-sm" placeholder="ระบุ"></div>`;
+            document.getElementById(`cell-absent-${id}`).innerHTML = `<span class="text-amber-500 text-xs font-bold">รออัปเดต</span>`;
+            document.getElementById(`cell-btn-${id}`).innerHTML = `<button onclick="saveAttendance('${id}', ${total})" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm w-full"><i class="fa-solid fa-save mr-1"></i>อัปเดต</button>`;
+        }
+
+        function saveAttendance(id, total) {
+            const inputVal = document.getElementById(`input-${id}`).value;
+            if(inputVal === '') return Swal.fire('แจ้งเตือน', 'กรุณากรอกจำนวนผู้เข้าสอบ', 'warning');
+            
+            const attended = parseInt(inputVal);
+            if(attended > total || attended < 0) return Swal.fire('ผิดพลาด', 'ยอดเข้าสอบต้องไม่เกินผู้มีสิทธิ์ และไม่ติดลบ', 'error');
+
+            Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            google.script.run.withSuccessHandler(res => {
+                if(res.success) {
+                    Swal.fire({icon: 'success', title: 'บันทึกสำเร็จ', timer: 1000, showConfirmButton: false});
+                    loadExamTable(); 
+                } else {
+                    Swal.fire('ผิดพลาด', res.message, 'error');
+                }
+            }).updateAttendanceRecord(id, attended);
+        }
+
+        // แท็บ 3: แดชบอร์ด & รายงาน PDF
+        Chart.defaults.font.family = "'Prompt', sans-serif";
+        
+        function loadDashboardData() {
+            document.getElementById('dash-loading').classList.remove('hidden');
+            document.getElementById('dash-content').classList.add('hidden');
+            google.script.run.withSuccessHandler(renderDashboard).getDashboardData();
+        }
+
+        function renderDashboard(res) {
+            document.getElementById('dash-loading').classList.add('hidden');
+            document.getElementById('dash-content').classList.remove('hidden');
+
+            if (!res.success || res.empty) return;
+
+            const sum = res.summary;
+            document.getElementById('dash-total').innerText = sum.total.toLocaleString();
+            document.getElementById('dash-attended').innerText = sum.attended.toLocaleString();
+            document.getElementById('dash-absent').innerText = sum.absent.toLocaleString();
+            
+            const pct = sum.total > 0 ? ((sum.attended / sum.total) * 100).toFixed(1) : 0;
+            document.getElementById('dash-percent').innerText = pct + "%";
+
+            // กราฟ
+            if (chartPie) chartPie.destroy();
+            chartPie = new Chart(document.getElementById('pieChart').getContext('2d'), {
+                type: 'doughnut',
+                data: { labels: ['เข้าสอบ', 'ขาดสอบ'], datasets: [{ data: [sum.attended, sum.absent], backgroundColor: ['#10b981', '#f43f5e'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: {usePointStyle: true} } }, cutout: '70%' }
+            });
+
+            if (chartBar) chartBar.destroy();
+            const labels = Object.keys(res.levelStats);
+            chartBar = new Chart(document.getElementById('barChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'เข้าสอบ', data: labels.map(l => res.levelStats[l].attended), backgroundColor: '#3b82f6', borderRadius: 4 },
+                        { label: 'ขาดสอบ', data: labels.map(l => res.levelStats[l].absent), backgroundColor: '#cbd5e1', borderRadius: 4 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: {grid: {display: false}}, y: {beginAtZero: true} }, plugins: { legend: { position: 'bottom', labels: {usePointStyle: true} } } }
+            });
+
+            const webBody = document.getElementById('web-detail-table-body');
+            const printBody = document.getElementById('print-table-body');
+            const printFoot = document.getElementById('print-table-foot');
+            
+            webBody.innerHTML = '';
+            printBody.innerHTML = '';
+            
+            if(res.details.length === 0) {
+                webBody.innerHTML = '<tr><td colspan="9" class="text-center py-6 text-slate-400">ยังไม่มีข้อมูลผลการสอบที่บันทึกแล้ว</td></tr>';
+                printBody.innerHTML = '<tr><td colspan="11" style="text-align:center;">ไม่พบข้อมูล</td></tr>';
+            } else {
+                // จัดเรียงตาม ภาคเรียน > สนามสอบ > ตำบล > ชั้น
+                res.details.sort((a, b) => {
+                    if (a.semester !== b.semester) return a.semester.localeCompare(b.semester);
+                    if (a.center !== b.center) return a.center.localeCompare(b.center);
+                    if (a.subDistrict !== b.subDistrict) return a.subDistrict.localeCompare(b.subDistrict);
+                    if (a.level !== b.level) return a.level.localeCompare(b.level);
+                    return a.subject.localeCompare(b.subject);
+                });
+
+                let runningNum = 1;
+                res.details.forEach(item => {
+                    const pctAttColor = item.pctAtt >= 80 ? 'text-emerald-600' : (item.pctAtt >= 50 ? 'text-amber-500' : 'text-rose-500');
+                    
+                    // แทรกข้อมูล Web UI
+                    webBody.innerHTML += `
+                        <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
+                            <td class="px-4 py-3 text-center text-blue-600 font-bold bg-blue-50/30">${item.semester}</td>
+                            <td class="px-4 py-3 text-slate-600 font-medium">${item.center}</td>
+                            <td class="px-4 py-3 text-slate-800 font-bold">${item.subDistrict}</td>
+                            <td class="px-4 py-3">
+                                <p class="text-slate-800 font-semibold leading-tight">${item.subject}</p>
+                                <span class="inline-block bg-indigo-50 text-indigo-600 text-[11px] px-2 py-0.5 mt-1 rounded-md font-semibold">${item.level}</span>
+                            </td>
+                            <td class="px-4 py-3 text-center font-bold text-blue-600">${item.total}</td>
+                            <td class="px-4 py-3 text-center font-bold text-emerald-600 bg-emerald-50/30">${item.attended}</td>
+                            <td class="px-4 py-3 text-center font-bold ${pctAttColor} bg-emerald-50/30">${item.pctAtt}%</td>
+                            <td class="px-4 py-3 text-center font-bold text-rose-500 bg-rose-50/30">${item.absent}</td>
+                            <td class="px-4 py-3 text-center font-bold text-rose-400 bg-rose-50/30">${item.pctAbs}%</td>
+                        </tr>
+                    `;
+
+                    // แทรกข้อมูล Print Area
+                    printBody.innerHTML += `
+                        <tr>
+                            <td>${runningNum++}</td>
+                            <td>${item.semester}</td>
+                            <td class="text-left">${item.center}</td>
+                            <td class="text-left">${item.subDistrict}</td>
+                            <td class="text-left">${item.level}</td>
+                            <td class="text-left">${item.subject}</td>
+                            <td>${item.total}</td>
+                            <td>${item.attended}</td>
+                            <td>${item.pctAtt}</td>
+                            <td>${item.absent}</td>
+                            <td>${item.pctAbs}</td>
+                        </tr>
+                    `;
+                });
+
+                let totalPctAtt = sum.total > 0 ? ((sum.attended / sum.total) * 100).toFixed(2) : "0.00";
+                let totalPctAbs = sum.total > 0 ? ((sum.absent / sum.total) * 100).toFixed(2) : "0.00";
+                printFoot.innerHTML = `
+                    <tr style="font-weight: bold; background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <td colspan="6" style="text-align: right; padding-right: 15px;">รวมจำนวนผู้มีสิทธิ์สอบทั้งหมด</td>
+                        <td>${sum.total}</td>
+                        <td>${sum.attended}</td>
+                        <td>${totalPctAtt}</td>
+                        <td>${sum.absent}</td>
+                        <td>${totalPctAbs}</td>
+                    </tr>
+                `;
+            }
+        }
+    </script>
 </body>
 </html>
